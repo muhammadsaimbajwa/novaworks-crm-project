@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  AGENT
+}
+
+model User {
+  id             String   @id
+  name           String
+  email          String   @unique
+  passwordHash   String
+  role           Role
+  specialization String
+  skills         String[]
+
+  managedProjects Project[] @relation("ProjectManager")
+  tasks           Task[]    @relation("TaskAssignee")
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  clientName  String
+  description String
+  managerId   String
+  deadline    DateTime
+  createdAt   DateTime @default(now())
+
+  manager User   @relation("ProjectManager", fields: [managerId], references: [id])
+  tasks   Task[]
+
+  @@index([managerId])
+}
+
+model Task {
+  id             String   @id @default(cuid())
+  projectId      String
+  title          String
+  description    String
+  assigneeId     String
+  deadline       DateTime
+  estimatedHours Float
+  createdAt      DateTime @default(now())
+
+  project  Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignee User    @relation("TaskAssignee", fields: [assigneeId], references: [id])
+
+  @@index([projectId])
+  @@index([assigneeId])
+}
